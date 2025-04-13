@@ -4,14 +4,16 @@ from bs4 import BeautifulSoup
 
 class BucketFileLoader:
     """
-    Class to load files from a Google Cloud Storage bucket.
-    This class is used to get the link of all files in the bucket.
+    Class to load files from a Google Cloud Storage bucket. \n
+    This class is used to get the link of all files in the bucket. \n
     
     """
     url_files = []
 
     def __init__(self, link_bucket):
         self.link = link_bucket
+        self.url_files = []
+        self.get_file_link()
     
     def get_file_link(self):
         """
@@ -31,9 +33,11 @@ class BucketFileLoader:
         else:
             raise Exception(f"Failed to get files from bucket: {response.status_code}")
     
-    def get_files_parquet(self):
+    def get_files_parquet(self) -> list:
         """
-        Get the link of all parquet files in the bucket.
+        Get the link of all parquet files in the bucket. \n
+        This function return a list of URLs to the files in the bucket. \n
+        The files are in parquet format. \n
         """
         return [val for val in self.url_files if val.endswith('.pq')]
     
