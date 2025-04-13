@@ -2,7 +2,7 @@
 
 # Espera o Postgres ficar pronto
 echo "Aguardando o Postgres iniciar..."
-sleep 20
+sleep 10
 
 # Verifica se o banco de dados 'dbteste' existe
 echo "Verificando se o banco de dados 'dbteste' existe..."
