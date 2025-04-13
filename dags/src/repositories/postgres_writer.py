@@ -2,6 +2,12 @@ import polars as pl
 from sqlalchemy import create_engine
 from src.interfaces.interface_database import InterfaceDatabase
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from src.interfaces.session_manager import SessionManager
+from src.models.customer import Customer
+from src.models.address import Address
+from src.models.cancellation_reason import CancellationReason
+from src.models.order import Order
+from src.models.terminal import Terminal
 
 
 class PostgresWriter(InterfaceDatabase):
@@ -92,7 +98,7 @@ class PostgresWriter(InterfaceDatabase):
             }
             
             customer_sql = """
-            INSERT INTO public.tb_customers (customer_phone, customer_email)
+            INSERT INTO public.tb_customers (customer_phone)
             VALUES (%(customer_phone)s)
             RETURNING customer_id;
             """
@@ -145,6 +151,67 @@ class PostgresWriter(InterfaceDatabase):
             
             self.hook.run(order_sql, parameters=order_params)
 
+    def insert_all(self, df: pl.DataFrame):
+        # De-duplicar
+        customer_data = df.select(["customer_phone"]).unique().to_dicts()
+        address_data = df.select([
+            "customer_phone", "city", "country", "country_state", "zip_code", 
+            "street_name", "neighborhood", "complement"
+        ]).to_dicts()
+        cancellation_data = df.select(["cancellation_reason"]).unique().to_dicts()
+        order_data = df.to_dicts()
+
+        terminal_data = df.select([
+            "terminal_serial_number", 
+            "terminal_model", 
+            "terminal_type"
+        ]).unique().to_dicts()
+
+        with SessionManager() as session:
+            # Insert Customers
+            session.bulk_insert_mappings(Customer, customer_data)
+            session.flush()  # Garantir que customer_id seja populado
+
+            customer_map = {
+                c.customer_phone: c.customer_id
+                for c in session.query(Customer).all()
+            }
+
+            # Insert Cancellation Reasons
+            session.bulk_insert_mappings(CancellationReason, cancellation_data)
+            session.flush()
+
+            reason_map = {
+                r.reason: r.id
+                for r in session.query(CancellationReason).all()
+            }
+
+            # Insert Terminals
+            session.bulk_insert_mappings(Terminal, terminal_data)
+            session.flush()
+
+            # Insert Addresses
+            address_records = []
+            for addr in address_data:
+                address_records.append({
+                    "customer_id": customer_map.get(addr["customer_phone"]),
+                    **{k: addr[k] for k in addr if k != "customer_phone"}
+                })
+            session.bulk_insert_mappings(Address, address_records)
+
+            # Insert Orders
+            order_records = []
+            for row in order_data:
+                order_records.append({
+                    "order_number": row["order_number"],
+                    "provider": row["provider"],
+                    "technician_email": row["technician_email"],
+                    "cancellation_reason_id": reason_map.get(row["cancellation_reason"]),
+                    "arrival_date": row["arrival_date"],
+                    "deadline_date": row["deadline_date"],
+                    "last_modified_date": row["last_modified_date"]
+                })
+            session.bulk_insert_mappings(Order, order_records)
 
 
         
