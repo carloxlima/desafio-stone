@@ -5,16 +5,6 @@ class InterfaceDatabase(ABC):
     """
     Interface for database operations.
     """
-
-    @abstractmethod
-    def insert_dataframe(self, df: pl.dataframe, table_name: str):
-        """
-        Write a DataFrame to the database.
-        :param df: The DataFrame to write.
-        :param table_name: The name of the table to write to.   
-        """
-        pass
-    
     @abstractmethod
     def _create_connection(self):
         """
