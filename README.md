@@ -122,3 +122,11 @@ DAG principal com 8 tasks:
 - **`dim_technicians`**: Dimensão de técnicos. Contém os e-mails dos técnicos responsáveis pelas ordens de serviço.
 
 - **`fct_orders`**: Fato principal do projeto. Representa os pedidos realizados, com chaves para todas as dimensões relevantes (cliente, endereço, técnico, terminal e motivo de cancelamento), além de informações como datas e fornecedor.
+
+---
+
+## 🖼️ Exemplo de Execução
+
+Abaixo, um exemplo da execução do ambiente com o Astro CLI e Airflow rodando corretamente:
+
+![Execução do projeto](execucao.png)
