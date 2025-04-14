@@ -2,6 +2,11 @@ from abc import ABC, abstractmethod
 from src.interfaces.interface_database import InterfaceDatabase
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import polars as pl
+from src.models import DimCustomer, DimAddress, DimTechnician, DimTerminal, DimCancellationReason, FctOrder
+from src.models import Customer, CancellationReason, Order, Address
+from src.models import EvidenceLog
+from src.models import ProcessLog
+from src.models.base import Base
 
 
 class PostgresCreateTables (InterfaceDatabase):
@@ -42,3 +47,15 @@ class PostgresCreateTables (InterfaceDatabase):
 
     def insert_dataframe(self, df: pl.DataFrame, table_name: str):
         pass
+
+    def create_tables_models(self):
+        Base.metadata.create_all(self.engine)
+
+    def create_dw_tables(self, file_sql: str = "create_tables_dw.sql"):
+        from pathlib import Path
+        project_root = Path(__file__).resolve().parents[3]
+        sql_path = project_root / "include" / "sql" / file_sql
+
+        with open(sql_path ,"r") as f:
+            sql = f.read()
+        self.hook.run(sql)  

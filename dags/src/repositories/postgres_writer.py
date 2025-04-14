@@ -3,11 +3,16 @@ from sqlalchemy import create_engine
 from src.interfaces.interface_database import InterfaceDatabase
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from src.interfaces.session_manager import SessionManager
-from src.models.customer import Customer
-from src.models.address import Address
-from src.models.cancellation_reason import CancellationReason
-from src.models.order import Order
-from src.models.terminal import Terminal
+from sqlalchemy import update
+from datetime import datetime
+from src.models import Customer
+from src.models import Address
+from src.models import CancellationReason
+from src.models import Order
+from src.models import ProcessLog
+
+
+
 
 
 class PostgresWriter(InterfaceDatabase):
@@ -22,6 +27,9 @@ class PostgresWriter(InterfaceDatabase):
         """
         self.connection = connection
         self.engine = self._create_connection()
+
+        with SessionManager() as session:   
+            self.session = session
 
     def _create_connection(self):
         self.hook = PostgresHook(postgres_conn_id=self.connection)
@@ -44,6 +52,7 @@ class PostgresWriter(InterfaceDatabase):
             """
 
         return  self.hook.get_first(sql, parameters={"file_name": id})
+        
     
     def verify_unique_id_hash_table(self, hash: str, id: str, table_name: str, column_name: str):
         """
@@ -65,107 +74,45 @@ class PostgresWriter(InterfaceDatabase):
         """
         df = df.to_pandas()
         
-        df.to_sql(table_name, con=self.engine, if_exists='append', index=False)    
+        df.to_sql(table_name, con=self.engine, if_exists='append', index=False)   
+
+    def insert_process_log(self, file_name: str, process_status: str, step: int, error_message: str = None, processed: bool = False):
+        new_log = ProcessLog(
+            file_name=file_name,
+            process_status=process_status,
+            process_time=datetime.now(),
+            error_message=error_message,
+            processed=processed,
+            step=step
+        )
+        self.session.add(new_log)
+        self.session.commit() 
     
-    def insert_process_log(self, file_name: str, process_status: str):
-        """
-        Insert the process log on the database.           
-        The process log is inserted on the database using the PostgresHook.
-        :param file_name: The name of the file to be inserted.
-        :param process_status: The status of the process to be inserted.
-        :return: True if the process log is inserted, False otherwise.
-        """
+    # def insert_process_log(self, file_name: str, process_status: str):
+    #     """
+    #     Insert the process log on the database.           
+    #     The process log is inserted on the database using the PostgresHook.
+    #     :param file_name: The name of the file to be inserted.
+    #     :param process_status: The status of the process to be inserted.
+    #     :return: True if the process log is inserted, False otherwise.
+    #     """
 
-        sql = """
-            INSERT INTO public.tb_process_log(file_name, process_status)
-            VALUES (%(file_name)s, %(process_status)s);
-            """
+    #     sql = """
+    #         INSERT INTO public.tb_process_log(file_name, process_status, step)
+    #         VALUES (%(file_name)s, %(process_status)s, %(step)s);
+    #         """
 
-        return self.hook.run(sql, parameters={ "file_name": file_name,"process_status": process_status})
+    #     return self.hook.run(sql, parameters={ "file_name": file_name,"process_status": process_status, "step": 1 })
     
-
-    def insert_file_parque(self, df: pl.DataFrame):
-        """
-        Insert the file on the database.
-        The file is inserted on the database using the PostgresHook.
-        :param df: The dataframe to be inserted.                        
-        """
-        
-        for row in df.iter_rows(named=True):
-            
-            customer_params = {
-                "customer_phone": row['customer_phone']
-            }
-            
-            customer_sql = """
-            INSERT INTO public.tb_customers (customer_phone)
-            VALUES (%(customer_phone)s)
-            RETURNING customer_id;
-            """
-            
-            customer_id = self.hook.get_first(customer_sql, parameters=customer_params)[0]
-
-            # Inserir dados na tabela addresses
-            address_params = {
-                "customer_id": customer_id,
-                "city": row['city'],
-                "country": row['country'],
-                "country_state": row['country_state'],
-                "zip_code": row['zip_code'],
-                "street_name": row['street_name'],
-                "neighborhood": row['neighborhood'],
-                "complement": row['complement']
-            }
-            
-            address_sql = """
-            INSERT INTO public.tb_addresses (customer_id, city, country, country_state, zip_code, street_name, neighborhood, complement)
-            VALUES (%(customer_id)s, %(city)s, %(country)s, %(country_state)s, %(zip_code)s, %(street_name)s, %(neighborhood)s, %(complement)s)
-            RETURNING address_id;
-            """
-            
-            address_id = self.hook.get_first(address_sql, parameters=address_params)[0]
-
-             
-            cancellation_reason_sql = """
-                INSERT INTO public.tb_cancellation_reasons (reason)
-                VALUES (%(reason)s)
-                RETURNING id;
-            """
-            cancellation_reason_id = self.hook.get_first(cancellation_reason_sql, parameters={"reason": row['cancellation_reason']})[0]
-
-            # Inserir dados na tabela orders
-            order_params = {
-                "order_number": row['order_number'],
-                "provider": row['provider'],
-                "technician_email": row['technician_email'],
-                "cancellation_reason_id": cancellation_reason_id,  # Isso pode ser mapeado para uma ID
-                "arrival_date": row['arrival_date'],
-                "deadline_date": row['deadline_date'],
-                "last_modified_date": row['last_modified_date']
-            }
-            
-            order_sql = """
-            INSERT INTO public.tb_orders (order_number, provider, technician_email, cancellation_reason_id, arrival_date, deadline_date, last_modified_date)
-            VALUES (%(order_number)s, %(provider)s, %(technician_email)s, %(cancellation_reason_id)s, %(arrival_date)s, %(deadline_date)s, %(last_modified_date)s)
-            """
-            
-            self.hook.run(order_sql, parameters=order_params)
-
     def insert_all(self, df: pl.DataFrame):
         # De-duplicar
-        customer_data = df.select(["customer_phone"]).unique().to_dicts()
+        customer_data = df.select(["customer_phone","customer_code"]).unique().to_dicts()
         address_data = df.select([
-            "customer_phone", "city", "country", "country_state", "zip_code", 
+            "customer_code", "city", "country", "country_state", "zip_code", 
             "street_name", "neighborhood", "complement"
         ]).to_dicts()
-        cancellation_data = df.select(["cancellation_reason"]).unique().to_dicts()
+        cancellation_data = df.select(["reason"]).unique().to_dicts()
         order_data = df.to_dicts()
-
-        terminal_data = df.select([
-            "terminal_serial_number", 
-            "terminal_model", 
-            "terminal_type"
-        ]).unique().to_dicts()
 
         with SessionManager() as session:
             # Insert Customers
@@ -173,9 +120,10 @@ class PostgresWriter(InterfaceDatabase):
             session.flush()  # Garantir que customer_id seja populado
 
             customer_map = {
-                c.customer_phone: c.customer_id
+                c.customer_code: c.customer_id
                 for c in session.query(Customer).all()
             }
+            #print(f'customer_map: {customer_map}')
 
             # Insert Cancellation Reasons
             session.bulk_insert_mappings(CancellationReason, cancellation_data)
@@ -186,16 +134,13 @@ class PostgresWriter(InterfaceDatabase):
                 for r in session.query(CancellationReason).all()
             }
 
-            # Insert Terminals
-            session.bulk_insert_mappings(Terminal, terminal_data)
-            session.flush()
-
             # Insert Addresses
             address_records = []
             for addr in address_data:
+                #print(f'customer_map: {addr["customer_code"]}')
                 address_records.append({
-                    "customer_id": customer_map.get(addr["customer_phone"]),
-                    **{k: addr[k] for k in addr if k != "customer_phone"}
+                    "customer_id": customer_map.get(addr["customer_code"]),
+                    **{k: addr[k] for k in addr if k != "customer_code"}
                 })
             session.bulk_insert_mappings(Address, address_records)
 
@@ -206,12 +151,31 @@ class PostgresWriter(InterfaceDatabase):
                     "order_number": row["order_number"],
                     "provider": row["provider"],
                     "technician_email": row["technician_email"],
-                    "cancellation_reason_id": reason_map.get(row["cancellation_reason"]),
+                    "cancellation_reason_id": reason_map.get(row["reason"]),
+                    "customer_id": customer_map.get(addr["customer_code"]),
                     "arrival_date": row["arrival_date"],
                     "deadline_date": row["deadline_date"],
-                    "last_modified_date": row["last_modified_date"]
+                    "last_modified_date": row["last_modified_date"],
+                    "terminal_serial_number":row["terminal_serial_number"], 
+                    "terminal_model":row["terminal_model"], 
+                    "terminal_type": row["terminal_type"],
+                    "file_name": row["file_name"]
                 })
             session.bulk_insert_mappings(Order, order_records)
 
 
-        
+    def upd_status_log( self, file_name: str,  process_status: str, step: int, error_message: str = None, processed: bool = False):
+        stmt = (
+            update(ProcessLog)
+            .where(ProcessLog.file_name == file_name)
+            .values(
+                process_status=process_status,
+                process_time=datetime.now(),
+                error_message=error_message,
+                processed=processed,
+                step=step
+            )
+        )
+
+        self.session.execute(stmt)
+        self.session.commit()
