@@ -1,48 +1,100 @@
-Overview
-========
+# Desafio Stone — ETL com Apache Airflow
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+Este projeto tem como objetivo demonstrar a construção de um pipeline de ETL utilizando Apache Airflow com o Astro CLI.
 
-Project Contents
-================
+## ✅ Como Executar o Projeto
 
-Your Astro project contains the following files and folders:
+Siga os passos abaixo para configurar e executar o ambiente.
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+### 1. Clonando o Repositório
 
-Deploy Your Project Locally
-===========================
+```bash
+git clone https://github.com/carloxlima/desafio-stone.git
+cd desafio-stone
+```
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+### 2. Instalando o Astro CLI
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+#### Mac e Linux:
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install astro
+```
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+#### Windows:
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+Instale o WSL (Windows Subsystem for Linux). Em seguida, siga os passos para Mac/Linux dentro do terminal WSL.
 
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
+### 3. Iniciando o Ambiente
 
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
+```bash
+astro dev start
+```
 
-Deploy Your Project to Astronomer
-=================================
+Esse comando criará os containers do Airflow e do banco de dados Postgres, além de instalar as dependências.
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+---
 
-Contact
-=======
+## 🗄️ Configuração do Banco de Dados
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+### Cliente (ex: DBeaver):
+
+- Host: `localhost`
+- Porta: `5132`
+- Usuário: `postgres`
+- Senha: `postgres`
+
+Crie a base de dados manualmente:
+
+```sql
+CREATE DATABASE dbpedrapagamentos;
+```
+
+### Conexão no Airflow:
+
+- Connection Id: `postgres_conn`
+- Connection Type: `Postgres`
+- Host: `postgres`
+- Database: `dbpedrapagamentos`
+- Login: `postgres`
+- Password: `postgres`
+- Port: `5432`
+
+---
+
+## 🧩 DAGs Disponíveis
+
+### 1. `init_create_tables`
+
+Cria as tabelas necessárias no banco.  
+**Execute esta DAG primeiro.**
+
+### 2. `dag_etl_pedrapagamento`
+
+DAG principal com 8 tasks:
+
+1. Leitura dos arquivos no bucket.
+2. Tratamento dos dados.
+3. Carga nas tabelas normalizadas.
+4. Armazenamento dos comprovantes.
+5. Verificação de logs processados.
+6. Extração de dados das tabelas normalizadas.
+7. Transformação e carga nas dimensões.
+8. Carga na tabela fato.
+
+---
+
+## ✨ Observações
+
+- Utilize o Airflow UI em `http://localhost:8080`
+- Todas as DAGs estão no diretório `dags/`
+- As conexões e variáveis devem ser configuradas na interface do Airflow
+
+---
+
+## 📬 Contato
+
+Em caso de dúvidas ou sugestões, sinta-se à vontade para abrir uma issue ou entrar em contato.
+
+---

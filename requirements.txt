@@ -2,3 +2,9 @@
 polars
 pandas
 sqlalchemy
+dash
+plotly
+pandas
+sqlalchemy
+psycopg2-binary
+dash
