@@ -93,8 +93,32 @@ DAG principal com 8 tasks:
 
 ---
 
-## 📬 Contato
+## 🧾 Descrição das Tabelas
 
-Em caso de dúvidas ou sugestões, sinta-se à vontade para abrir uma issue ou entrar em contato.
+- **`tb_process_log`**: Registra o status de processamento de arquivos no pipeline, indicando a etapa, sucesso ou falha, mensagens de erro e o nome do arquivo processado.
+
+- **`tb_evidence_log`**: Armazena logs de evidências associadas aos pedidos, como comprovantes de atendimento, com informações sobre status de atendimento conluido ou não.
+
+- **`tb_cancellation_reasons`**: Contém os motivos de cancelamento utilizados pelos pedidos. Referenciada na tabela de pedidos (`tb_orders`).
+
+- **`tb_customers`**: Guarda os dados básicos dos clientes, como o telefone. Serve como entidade central para relacionar pedidos e endereços.
+
+- **`tb_orders`**: Tabela principal com os dados dos pedidos, como fornecedor, técnico, datas, modelo de terminal, entre outros. Relaciona-se com os clientes e os motivos de cancelamento.
+
+- **`tb_addresses`**: Armazena os endereços associados aos clientes, com campos como cidade, estado, país, rua, e complemento.
 
 ---
+
+## 🧾 Descrição das Tabelas do Data Warehouse
+
+- **`dim_customers`**: Dimensão de clientes. Contém o ID original do cliente e o número de telefone.
+
+- **`dim_addresses`**: Dimensão de endereços. Armazena os dados geográficos relacionados ao cliente, como cidade, estado, país e outros detalhes do endereço.
+
+- **`dim_cancellation_reasons`**: Dimensão dos motivos de cancelamento. Representa os diferentes tipos de cancelamento utilizados no processo.
+
+- **`dim_terminals`**: Dimensão dos terminais. Guarda dados técnicos dos equipamentos utilizados nos pedidos, como número de série, modelo e tipo.
+
+- **`dim_technicians`**: Dimensão de técnicos. Contém os e-mails dos técnicos responsáveis pelas ordens de serviço.
+
+- **`fct_orders`**: Fato principal do projeto. Representa os pedidos realizados, com chaves para todas as dimensões relevantes (cliente, endereço, técnico, terminal e motivo de cancelamento), além de informações como datas e fornecedor.
