@@ -27,27 +27,25 @@ def dat_etl():
 
         @task
         def extractor():
-            pass   
+               
             return BucketFileLoader('http://storage.googleapis.com/desafio-eng-dados/')\
                 .get_files_parquet()
 
 
         @task
         def transformer(urls):
-            pass
+            
             bucket_file_service = get_bucket_service()
             return bucket_file_service.transformation(urls=urls)
 
         @task
         def loader(paths):
-            pass
-            i = 0
+            
             for path in paths:
-                if i == 0:
                     bucket_file_service = get_bucket_service()
                     bucket_file_service.loader(path)
                     bucket_file_service.update_process_log()
-                i += 1
+
         @task
         def load_evidence(arg):
             lodimg = ManagerEvidence(PostgresManagerEvidence(connection="postgres_conn"))

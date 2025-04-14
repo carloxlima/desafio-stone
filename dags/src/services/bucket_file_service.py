@@ -23,6 +23,10 @@ class BucketFileService:
 
     
     def transformation(self, urls: str) :
+        """
+        This function transforms the files on the bucket and insert them on the database.
+        :param urls: The urls to be transformed.
+        """
         
         self.paths = []
         for url in urls:
@@ -38,16 +42,18 @@ class BucketFileService:
                 "cancellation_reason":"reason"
             })
             
-            #output_path = self.project_root / "include" / "temp" /  f"{id}.parquet" 
             output_path = f"/tmp/{id}.parquet"
             df.write_parquet(output_path)
             self.paths.append(output_path)
-            return self.paths  
+        return self.paths  
 
     def loader(self, path):
+        """         
+        This function loads the files on the database.
+        :param path: The path to the file to be loaded.
+        """
         
         self.id = path.split('/')[-1].replace('.parquet', '')
-        print(f'EXECUCAO DO LOADER {self.id}')
         if self.db_writer.verify_unique_id_table(self.id, table_name='tb_process_log', column_name='file_name') is None:
             self.db_writer.insert_all(pl.read_parquet(path))
             self.db_writer.insert_process_log(file_name=self.id,process_status="Started",step=1,error_message=None,processed=False)
@@ -62,51 +68,10 @@ class BucketFileService:
 
         if response.status_code == 200:
             response.raise_for_status()
-            #df = pl.read_parquet(io.BytesIO(response.content))
-            #☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️
-            
-            project_root = Path(__file__).resolve().parents[3]
-            sql_path = project_root / "include" / "temp" /  '2025-04-13.pq' 
-            print(f'Local onde o arquivo deverias estar: {sql_path}')
-            df = pl.read_parquet(sql_path)
+            df = pl.read_parquet(io.BytesIO(response.content))
             return df
         else:
-            raise Exception(f"Failed to get files from bucket: {response.status_code}")
-    
-
-    # def get_file_hash(df: pl.DataFrame, algo: str = 'sha256') -> str:
-    #     """
-    #     Calculate the hash of the dataframe.
-    #     The hash is calculated using the specified algorithm.
-    #     The default algorithm is sha256.
-    #     :param df: The dataframe to be hashed.
-    #     :param algo: The algorithm to be used to calculate the hash.
-    #     :return: The hash of the dataframe.
-    #     """
-    #     import hashlib
-    #     buffer = io.BytesIO()
-    #     df.write_csv(buffer, include_header=True)
-    #     buffer.seek(0)
-    #     return hashlib.new(algo, buffer.read()).hexdigest()
-    
-    # def insert_file_parquet_from_database(self, url: str, id: str, table_name: str, column_name: str):
-    #     """
-    #     This function verify if the id is unique on the table and insert the dataframe on the database. \n
-    #     The dataframe is inserted on the database using the PostgresHook. \n
-    #     :param url: The url is the link to the file on the bucket.
-    #     :param id: The id to be verified.
-    #     :param table_name: The name of the table to be verified.
-    #     :param column_name: The name of the column to be verified.
-    #     """
-    #     self.url = url
-    #     #☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️☢️
-    #     if self.db_writer.verify_unique_id_table(id, table_name, column_name) is None:
-    #         self.db_writer.insert_process_log(file_name=id, process_status='Started')
-    #         #self.db_writer.insert_file_parque(self._reader_files_parquet(self.url))
-    #         self.db_writer.insert_all(self._reader_files_parquet(self.url))
-    #     else: 
-    #         print('File didnt inserted on the database')
-        
+            raise Exception(f"Failed to get files from bucket: {response.status_code}")       
     
     def update_process_log(self):
         """
