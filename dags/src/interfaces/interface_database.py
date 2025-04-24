@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-import polars as pl
+
 
 class InterfaceDatabase(ABC):
     """
     Interface for database operations.
     """
+
     @abstractmethod
     def _create_connection(self):
         """

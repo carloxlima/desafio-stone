@@ -1,9 +1,7 @@
-
-import polars as pl
 from collections import namedtuple
 
-class DataWarehouseETL:
 
+class DataWarehouseETL:
     """
     Calcula o valor com desconto aplicado.
 
@@ -19,18 +17,34 @@ class DataWarehouseETL:
         self.db_writer = db_writer
 
     def extract(self):
-
         return self.db_writer.extract_normalize_database()
         # Logic to extract data from the source
         print(f"Extracting data from {self.source_data}")
 
     def transform_and_load_dims(self, data):
-        
-        OrderDW = namedtuple("OrderDW", [
-            "order_number", "provider", "technician_email", "arrival_date", "deadline_date",
-            "last_modified_date", "cancellation_reason", "terminal_model", "terminal_type",
-            "customer_phone", "city", "country", "country_state", "file_name"
-        ])
+        OrderDW = namedtuple(
+            "OrderDW",
+            [
+                "order_number",
+                "provider",
+                "technician_email",
+                "arrival_date",
+                "deadline_date",
+                "last_modified_date",
+                "cancellation_reason",
+                "terminal_model",
+                "terminal_type",
+                "customer_phone",
+                "city",
+                "country",
+                "country_state",
+                "zip_code",
+                "street_name",
+                "neighborhood",
+                "complement",
+                "file_name",
+            ],
+        )
 
         base = [OrderDW(*row) for row in data]
 
@@ -42,14 +56,30 @@ class DataWarehouseETL:
 
         print("Loading data into the dimension tables")
 
-    
     def load_fct(self, data):
-        
-        OrderDW = namedtuple("OrderDW", [
-            "order_number", "provider", "technician_email", "arrival_date", "deadline_date",
-            "last_modified_date", "cancellation_reason", "terminal_model", "terminal_type",
-            "customer_phone", "city", "country", "country_state", "file_name"
-        ])
+        OrderDW = namedtuple(
+            "OrderDW",
+            [
+                "order_number",
+                "provider",
+                "technician_email",
+                "arrival_date",
+                "deadline_date",
+                "last_modified_date",
+                "cancellation_reason",
+                "terminal_model",
+                "terminal_type",
+                "customer_phone",
+                "city",
+                "country",
+                "country_state",
+                "zip_code",
+                "street_name",
+                "neighborhood",
+                "complement",
+                "file_name",
+            ],
+        )
 
         base = [OrderDW(*row) for row in data]
 

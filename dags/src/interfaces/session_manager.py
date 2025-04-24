@@ -1,11 +1,10 @@
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
-hook = PostgresHook(postgres_conn_id='postgres_conn')
+hook = PostgresHook(postgres_conn_id="postgres_conn")
 engine = hook.get_sqlalchemy_engine()
 SessionLocal = sessionmaker(bind=engine)
+
 
 class SessionManager:
     def __enter__(self):

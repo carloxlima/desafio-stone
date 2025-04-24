@@ -1,0 +1,7 @@
+pandas
+psycopg2-binary
+sqlalchemy
+dash
+plotly
+dash-bootstrap-components
+streamlit

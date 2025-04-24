@@ -1,9 +1,10 @@
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Text, Boolean, func
 from src.models.base import Base
 
+
 class EvidenceLog(Base):
-    __tablename__ = 'tb_evidence_log'
-    __table_args__ = {'schema': 'public'}
+    __tablename__ = "tb_evidence_log"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True)
     order_number = Column(String(100), unique=True, nullable=False)

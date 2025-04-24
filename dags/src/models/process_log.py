@@ -1,9 +1,10 @@
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Text, Boolean, func
 from src.models.base import Base
 
+
 class ProcessLog(Base):
-    __tablename__ = 'tb_process_log'
-    __table_args__ = {'schema': 'public'}
+    __tablename__ = "tb_process_log"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True)
     file_name = Column(String(255), unique=True, nullable=False)
